@@ -1,0 +1,17 @@
+{
+  "name": "epanet-client",
+  "version": "0.0.1",
+  "description": "Client for running EPANet simulations",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cumulative-timer": "^1.0.1",
+    "performance-now": "^2.1.0",
+    "pg-copy-streams": "^1.2.0"
+  }
+}
