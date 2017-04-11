@@ -1,132 +1,7 @@
-var pg = require('pg'),
-    config = require('./pg-config');
-
-var pool = new pg.Pool(config);
-
-exports.generate = function (locality) {
-    // Fetch all required data 
-    return fetchData(locality)
-        .then(res => buildFile(res)); // Compile into text *.inp file
-}
-
-function fetchData(locality) {
-    let result = {};
-    let client;
-    return new Promise((resolve, reject) => {
-        pool.connect()
-            .then(connectClient => {
-                client = connectClient;
-
-                // Select all Nodes
-                result.nodes = {};
-                return client.query(`
-                SELECT  n.*
-                FROM "WaterNode_04" n 
-                JOIN "WaterNodeMemo_04" d 
-                ON d."ID" = n."ID" 
-                WHERE d."Locality" = $1 ;
-            `, [locality]).then((res) => res)
-                //     return client.query(`
-                //     SELECT  n."Node_Code", 
-                //             n."Elevation",
-                //             n."Output",
-                //             n."Emitter_Coefficient"
-                //     FROM "WaterNode_04" n 
-                //     JOIN "WaterNodeMemo_04" d 
-                //     ON d."ID" = n."ID" 
-                //     WHERE d."Locality" = $1 ;
-                // `, [locality]).then((res) => res)
-            })
-            .then(res => res.rows.forEach(r => result.nodes[r.Node_Code] = r))
-            .catch(err => reject('error running query : ' + err))
-
-            // Select all tanks           
-            .then(() => {
-                result.tanks = {};
-                return client.query(`
-                SELECT  t.*, d."Volume", d."Top_Water_Level", d."Bottom_Water_Level"             
-                FROM "WaterTank_04" t 
-                JOIN "WaterTankMemo_04" d 
-                ON d."ID" = t."ID" 
-                WHERE d."Locality" = $1 ;
-            `, [locality]).then((res) => res)
-            })
-            .then(res => res.rows.forEach(r => result.tanks[r.Node_Code] = r))
-            .catch(err => reject('error running query : ' + err))
-
-            // Select all pipes
-            .then(() => {
-                result.pipes = {};
-                return client.query(`
-                SELECT  p.*
-                FROM "WaterPipe_04" p
-                JOIN "WaterPipeMemo_04" d
-                ON d."ID" = p."ID" 
-                WHERE d."Locality" = $1 ;
-            `, [locality]).then((res) => res)
-            })
-            .then(res => res.rows.forEach(r => result.pipes[r.Link_Code] = r))
-            .catch(err => reject('error running query : ' + err))
-
-            // Select all pumps
-            .then(() => {
-                result.pumps = {};
-                return client.query(`
-                SELECT  p.*, d."Power"
-                FROM "WaterPump_04" p
-                JOIN "WaterPumpMemo_04" d
-                ON d."ID" = p."ID" 
-                WHERE d."Locality" = $1 ;
-            `, [locality]).then((res) => res)
-            })
-            .then(res => res.rows.forEach(r => result.pumps[r.Link_Code] = r))
-            .catch(err => reject('error running query : ' + err))
-
-            // Select all curves
-            // NOTE: No way to only select a certain region
-            .then(() => {
-                result.curves = {};
-                return client.query(`
-                SELECT * FROM "WaterCurve_04"
-            `, []).then((res) => res)
-            })
-            .then(res => res.rows.forEach(r => result.curves[r.Curve_No] = r))
-            .catch(err => reject('error running query : ' + err))
-
-            // Select all valves
-            .then(() => {
-                result.valves = {};
-                return client.query(`
-                SELECT  v.*
-                FROM "WaterValve_04" v
-                JOIN "WaterValveMemo_04" d
-                ON d."ID" = v."ID" 
-                WHERE d."Locality" = $1 ;
-            `, [locality]).then((res) => res)
-            })
-            .then(res => res.rows.forEach(r => result.valves[r.Link_Code] = r))
-            .catch(err => reject('error running query : ' + err))
-
-            .then(() => {
-                // All done, releasing and resolving
-                client.release();
-                resolve(result);
-            })
-            .catch(err => {
-                reject('error fetching client from pool' + err);
-            });
-    });
-}
-
-function buildFile(data) {
-    // Temp printout
-    for (let a in data.nodes) {
-        if (data.nodes[a].Node_Code === '1451')
-            console.log('', data.nodes[a].Node_Code);
-    }
-
+exports.build = function (data) {
     // TODO: Ensure that ID / Node code is not longer than 15 characters
     // TODO: Possibly convert elevation + demand scenario to correct format?
+
     let inputString;
     const orZero = (f) => f || 0;
     return new Promise((resolve, reject) => {
@@ -291,7 +166,7 @@ LINKS ALL
 
             inputString += '[END]\n';
             console.log('file build complete');
-            resolve([inputString, data]);
+            resolve(inputString);
         }
         reject('No data provided');
     })

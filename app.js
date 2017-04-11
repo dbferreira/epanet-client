@@ -1,4 +1,5 @@
-var input = require('./src/input'),
+var inputData = require('./src/input-data'),
+    inputFile = require('./src/input-file'),
     pnow = require('performance-now'),
     textreader = require('./src/text-reader'),
     timer = require('cumulative-timer'),
@@ -18,18 +19,19 @@ function run() {
     const t1 = pnow();
     timer.start('inputData');
     // Build input file
-    input.generate(locality)
-        .then(([inputFile, inputRecords]) => {
+    inputData.fetch(locality)
+        .then(inputRecords => {
             timer.stop('inputData');
-            console.log('inputfile ready...');
             records = inputRecords;
-
+            timer.start('inputFile');
+            return inputFile.build(inputRecords);
+        }).then(inputFileContent => {
+            console.log('inputfile ready...');
             return new Promise(function (resolve, reject) {
-                timer.start('inputFile');
-                fs.writeFile(inputFilePath, inputFile, function (error) {
+                fs.writeFile(inputFilePath, inputFileContent, function (error) {
                     timer.stop('inputFile');
                     if (error) reject(error);
-                    else resolve(inputFile);
+                    else resolve(inputFileContent);
                 });
             });
         }).then(() => {

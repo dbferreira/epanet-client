@@ -23,7 +23,6 @@ function ReadData(filePath, records) {
                     if (node.key) {
                         if (records.nodes[node.key]) records.nodes[node.key].res = node;
                         if (records.tanks[node.key]) records.tanks[node.key].res = node;
-                        // else console.log('Still not found... what are you? ', node);
                     }
                 }
             }
@@ -37,20 +36,8 @@ function ReadData(filePath, records) {
                     if (records.pipes[link.key]) records.pipes[link.key].res = link;
                     if (records.pumps[link.key]) records.pumps[link.key].res = link;
                     if (records.valves[link.key]) records.valves[link.key].res = link;
-                    // else console.log('Couldnt find link: ', link);
                 }
             }
-            // let max = 200;
-            // for (var nodeKey in records.pipes) {
-            //     max--;
-            //     if (max === 0) {
-            //         break;
-            //     }
-
-            //     console.log(records.pipes[nodeKey]);
-            // }
-
-            // console.log(records.pumps);
             resolve(records);
         });
     });
